@@ -67,6 +67,7 @@ def predict_bulk(texts: List[str]):
     return preds
 
 
+st.markdown("---")
 st.markdown("## ✏️ Single Coder Demo")
 input_text = st.text_input(
     "Input Offense",
@@ -75,10 +76,12 @@ input_text = st.text_input(
 
 predictions = predict(input_text)
 
+st.markdown("Predictions")
 labels = ["Broad Category", "BJS Category", "BJS Description"]
 predictions_labeled = dict(zip(labels, predictions[0]))
 st.write(predictions_labeled)
 
+st.markdown("---")
 st.markdown("## 📑 Bulk Coder")
 uploaded_file = st.file_uploader("Bulk Upload", type=["xlsx", "csv"])
 
@@ -89,7 +92,15 @@ if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
 
     st.write("Select Column of Text")
-    selected_column = st.selectbox("Select Column of Texts", options=list(df.columns))
+    string_columns = list(df.select_dtypes("object").columns)
+    longest_column = max(
+        [(df[c].str.len().mean(), c) for c in string_columns], key=lambda x: x[0]
+    )[1]
+    selected_column = st.selectbox(
+        "Select Column of Texts",
+        options=list(string_columns),
+        index=string_columns.index(longest_column),
+    )
 
     input_texts = df[selected_column].tolist()
     bulk_preds = predict_bulk(input_texts)
