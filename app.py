@@ -9,8 +9,9 @@ import joblib
 import streamlit as st
 from sentence_transformers import SentenceTransformer
 
-from regexes import removals, substitutions
+from cleaning_utils import cleaner
 from download import download_link
+from functools import partial
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
@@ -18,23 +19,8 @@ ALL_PUNCTUATION = punctuation + "‘’"
 
 
 @st.cache
-def cleaner(text):
-    if pd.isnull(text):
-        return ""
-    # Remove Commas from Numbers
-    text = re.sub(r"(\d+?),(\d+?)", r"\1\2", text)
-    # Do all substitutions (Case insensitive on raw text)
-    for substitution in substitutions:
-        text = re.sub(substitution.regex, substitution.replacement, text)
-    # Remove any terms we don't want
-    for removal in removals:
-        text = re.sub(removal.regex, " ", text)
-    # Then remove remaining punctuation
-    for punct in ALL_PUNCTUATION:
-        text = text.replace(punct, " ")
-    text = " ".join(text.split())  # removes extra spaces: "  " → " "
-    text = text.lower()
-    return text
+def cleaner_cache(text):
+    return cleaner(text)
 
 
 @st.cache(allow_output_mutation=True)
@@ -43,16 +29,9 @@ def load_embedder():
     return embedder
 
 
-st.markdown(Path("intro.md").read_text())
-embedder = load_embedder()
-
-MODEL = "distilroberta-base-paraphrase-v1.lr"
-model = joblib.load(MODEL)
-
-
 @st.cache
 def predict(text: str):
-    clean = cleaner(text)
+    clean = cleaner_cache(text)
     embed = embedder.encode([clean], show_progress_bar=False)
     preds = model.predict(embed)
     return preds
@@ -60,18 +39,23 @@ def predict(text: str):
 
 @st.cache
 def predict_bulk(texts: List[str]):
-    print(texts)
-    cleaned = [cleaner(text) for text in texts]
+    cleaned = [cleaner_cache(text) for text in texts]
     embed = embedder.encode(cleaned, show_progress_bar=False)
     preds = model.predict(embed)
     return preds
 
 
+MODEL = "distilroberta-base-paraphrase-v1.20210122-091032.lr"
+model = joblib.load(MODEL)
+
+st.markdown(Path("readme.md").read_text())
+embedder = load_embedder()
+
 st.markdown("---")
 st.markdown("## ✏️ Single Coder Demo")
 input_text = st.text_input(
     "Input Offense",
-    value="FRAUDULENT USE OF A CREDIT CARD OR DEBT CARD >=$25,000",
+    value="FRAUDULENT USE OF A CREDIT CARD OR DEBT CARD >= $25,000",
 )
 
 predictions = predict(input_text)
@@ -83,37 +67,45 @@ st.write(predictions_labeled)
 
 st.markdown("---")
 st.markdown("## 📑 Bulk Coder")
+st.markdown("1️⃣ **Upload File**")
 uploaded_file = st.file_uploader("Bulk Upload", type=["xlsx", "csv"])
 
-if uploaded_file is not None:
-    if uploaded_file.name.endswith("xlsx"):
-        df = pd.read_excel(uploaded_file, engine="openpyxl")
-    elif uploaded_file.name.endswith("csv"):
-        df = pd.read_csv(uploaded_file)
+file_readers = {"csv": pd.read_csv, "xlsx": partial(pd.read_excel, engine="openpyxl")}
 
-    st.write("Select Column of Text")
+if uploaded_file is not None:
+    for filetype, reader in file_readers.items():
+        if uploaded_file.name.endswith(filetype):
+            df = reader(uploaded_file)
+
+    st.write("2️⃣ **Select Column of Offense Descriptions**")
     string_columns = list(df.select_dtypes("object").columns)
     longest_column = max(
         [(df[c].str.len().mean(), c) for c in string_columns], key=lambda x: x[0]
     )[1]
+
     selected_column = st.selectbox(
-        "Select Column of Texts",
+        "Select Column",
         options=list(string_columns),
         index=string_columns.index(longest_column),
     )
+    st.write("Uploaded Data Sample")
+    st.dataframe(df.head(20))
+    st.write(f"3️⃣ **Predict Using Column: `{selected_column}`**")
 
-    input_texts = df[selected_column].tolist()
-    bulk_preds = predict_bulk(input_texts)
-    for i, column in enumerate(labels):
-        df[column] = bulk_preds[:, i]
+    if st.button(f"Compute Predictions"):
+        input_texts = df[selected_column].tolist()
+        with st.spinner("Making Predictions"):
+            bulk_preds = predict_bulk(input_texts)
+        pred_copy_df = df.copy()
+        for i, column in enumerate(labels):
+            pred_copy_df[column] = bulk_preds[:, i]
 
-    st.write("Sample")
-    st.dataframe(df.head(100))
+        st.write("Sample Output")
+        st.dataframe(pred_copy_df.head(100))
 
-    if st.button("Download Dataframe as CSV"):
         tmp_download_link = download_link(
-            df,
+            pred_copy_df,
             f"{uploaded_file.name}-ncrp-predictions.csv",
-            "Click here to download your data!",
+            "⬇️ Download as CSV",
         )
         st.markdown(tmp_download_link, unsafe_allow_html=True)
