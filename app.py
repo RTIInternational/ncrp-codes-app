@@ -1,21 +1,36 @@
 import os
-import re
+from functools import partial
 from pathlib import Path
-from string import punctuation
-from typing import List
-import pandas as pd
+from typing import List, Dict, Any
 
-import joblib
+import pandas as pd
 import streamlit as st
-from sentence_transformers import SentenceTransformer
+from transformers import (
+    RobertaForSequenceClassification,
+    RobertaTokenizer,
+    TextClassificationPipeline,
+)
 
 from cleaning_utils import cleaner
 from download import download_link
-from functools import partial
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
-ALL_PUNCTUATION = punctuation + "‘’"
+
+def load_model():
+    pipeline = TextClassificationPipeline(
+        tokenizer=RobertaTokenizer.from_pretrained(
+            "rti-international/distilroberta-ncrp-classification"
+        ),
+        model=RobertaForSequenceClassification.from_pretrained(
+            "rti-international/distilroberta-ncrp-classification"
+        ),
+        return_all_scores=True,
+    )
+    return pipeline
+
+
+pipeline = load_model()
 
 
 @st.cache
@@ -23,33 +38,52 @@ def cleaner_cache(text):
     return cleaner(text)
 
 
-@st.cache(allow_output_mutation=True)
-def load_embedder():
-    embedder = SentenceTransformer("distilroberta-base-paraphrase-v1")
-    return embedder
-
-
-@st.cache
-def predict(text: str):
+def predict(text: str, sort=True):
     clean = cleaner_cache(text)
-    embed = embedder.encode([clean], show_progress_bar=False)
-    preds = model.predict(embed)
-    return preds
+    preds = pipeline([clean])
+    if sort:
+        sorted_preds = [
+            sorted(p, key=lambda d: d["score"], reverse=True) for p in preds
+        ]
+        return sorted_preds
+    else:
+        return preds
 
 
-@st.cache
 def predict_bulk(texts: List[str]):
     cleaned = [cleaner_cache(text) for text in texts]
-    embed = embedder.encode(cleaned, show_progress_bar=False)
-    preds = model.predict(embed)
+    preds = pipeline(cleaned)
     return preds
 
 
-MODEL = "distilroberta-base-paraphrase-v1.20210122-091032.lr"
-model = joblib.load(MODEL)
+def _max_pred(prediction_scores: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Utility function to find the maximum predicted label
+    for a single prediction
+
+    Args:
+        prediction_scores (List[Dict[str, Any]]): A list of predictions with keys
+            'label' and 'score'
+
+    Returns:
+        Dict[str, Any]: The 'label' and 'score' dict with the highest score value
+    """
+    return max(prediction_scores, key=lambda d: d["score"])
+
+
+def max_pred_bulk(preds: List[List[Dict[str, Any]]]) -> List[str]:
+    """Generates a "column" of label predictions by finding the max
+    prediction score per row
+
+    Args:
+        preds (List[List[Dict[str, Any]]]): A list of predictions
+
+    Returns:
+        List[str]: A list of labels with the max predicted score
+    """
+    return [_max_pred(pred)["label"] for pred in preds]
+
 
 st.markdown(Path("readme.md").read_text())
-embedder = load_embedder()
 
 st.markdown("---")
 st.markdown("## ✏️ Single Coder Demo")
@@ -61,8 +95,8 @@ input_text = st.text_input(
 predictions = predict(input_text)
 
 st.markdown("Predictions")
-labels = ["Broad Category", "BJS Category", "BJS Description"]
-predictions_labeled = dict(zip(labels, predictions[0]))
+labels = ["Charge Category"]
+predictions_labeled = dict(zip(labels, predictions))
 st.write(predictions_labeled)
 
 st.markdown("---")
@@ -97,8 +131,9 @@ if uploaded_file is not None:
         with st.spinner("Making Predictions"):
             bulk_preds = predict_bulk(input_texts)
         pred_copy_df = df.copy()
-        for i, column in enumerate(labels):
-            pred_copy_df[column] = bulk_preds[:, i]
+        pred_copy_df["charge_category_pred"] = max_pred_bulk(bulk_preds)
+
+        # TODO: Add all scores
 
         st.write("Sample Output")
         st.dataframe(pred_copy_df.head(100))
