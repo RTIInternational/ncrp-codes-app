@@ -29,12 +29,11 @@ predictions = predict(input_text)
 
 st.markdown("Predictions")
 labels = ["Charge Category"]
-predictions_labeled = dict(zip(labels, predictions))
-st.write(predictions_labeled)
+st.dataframe(pd.DataFrame(predictions[0]))
 
 st.markdown("---")
 st.markdown("## 📑 Bulk Coder")
-st.markdown(
+st.warning(
     "⚠️ *Note:* Your input data will be deduplicated"
     " on the selected column to reduce computation requirements."
 )
