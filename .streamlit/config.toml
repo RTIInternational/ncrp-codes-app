@@ -1,3 +1,6 @@
+[server]
+maxUploadSize = 20
+
 [runner]
 magicEnabled = false
 

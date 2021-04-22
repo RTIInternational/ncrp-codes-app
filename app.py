@@ -6,6 +6,7 @@ from typing import List, Dict, Any
 import pandas as pd
 import streamlit as st
 from more_itertools import ichunked
+from stqdm import stqdm
 
 from model_utils import predict, predict_bulk, max_pred_bulk
 from download import download_link
@@ -58,28 +59,28 @@ if uploaded_file is not None:
         options=list(string_columns),
         index=string_columns.index(longest_column),
     )
-    df = df.drop_duplicates(subset=[selected_column])
-    st.markdown(f"Uploaded Data Sample `(Deduplicated. N Rows = {len(df)})`")
-    st.dataframe(df.head(20))
+    df_unique = df.drop_duplicates(subset=[selected_column])
+    st.markdown(
+        f"Uploaded Data Sample `(Deduplicated. N Rows = {len(df_unique)}, Original N = {len(df)})`"
+    )
+    st.dataframe(df_unique.head(20))
     st.write(f"3️⃣ **Predict Using Column: `{selected_column}`**")
 
     if st.button(f"Compute Predictions"):
-        input_texts = (value for _, value in df[selected_column].items())
+        input_texts = (value for _, value in df_unique[selected_column].items())
 
-        n_batches = (len(df) // PRED_BATCH_SIZE) + 1
-        st.markdown("*Progress*")
-        progress_bar = st.progress(0)
-        batch_count = 0
+        n_batches = (len(df_unique) // PRED_BATCH_SIZE) + 1
 
         bulk_preds = []
-        for batch in ichunked(input_texts, PRED_BATCH_SIZE):
+        for batch in stqdm(
+            ichunked(input_texts, PRED_BATCH_SIZE),
+            total=n_batches,
+            desc="Bulk Predict Progress",
+        ):
             batch_preds = predict_bulk(batch)
             bulk_preds.extend(batch_preds)
-            batch_count += 1
-            progress_bar.progress(batch_count / n_batches)
-        progress_bar.progress(1.0)
 
-        pred_copy_df = df.copy()
+        pred_copy_df = df_unique.copy()
         pred_copy_df["charge_category_pred"] = max_pred_bulk(bulk_preds)
 
         # # TODO: Add all scores
