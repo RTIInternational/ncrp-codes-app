@@ -8,10 +8,11 @@ import streamlit as st
 from more_itertools import ichunked
 from stqdm import stqdm
 
-from model_utils import predict, predict_bulk, max_pred_bulk
+from onnx_model_utils import predict, predict_bulk, max_pred_bulk
 from download import download_link
 
-PRED_BATCH_SIZE = 500
+PRED_BATCH_SIZE = 16
+
 
 st.set_page_config(
     page_title="NCRP Offense Code Classifier", initial_sidebar_state="collapsed"
