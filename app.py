@@ -100,4 +100,3 @@ if uploaded_file is not None:
             "⬇️ Download as CSV",
         )
         st.markdown(tmp_download_link, unsafe_allow_html=True)
-        st.write(locals())
