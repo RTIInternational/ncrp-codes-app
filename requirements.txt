@@ -1,10 +1,10 @@
 openpyxl==3.0.6
 pandas==1.2.0
-transformers==4.5.1
+transformers[torch]==4.5.1
 # New Requirements
 streamlit==0.80.0
 more-itertools==8.7.0
 stqdm==0.0.3
-# torch
--f https://download.pytorch.org/whl/torch_stable.html
-torch==1.7.1+cpu
+# # torch
+# -f https://download.pytorch.org/whl/torch_stable.html
+# torch==1.7.1+cpu
