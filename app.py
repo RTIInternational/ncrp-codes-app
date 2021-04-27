@@ -10,7 +10,7 @@ from more_itertools import ichunked
 from model_utils import predict, predict_bulk, max_pred_bulk
 from download import download_link
 
-PRED_BATCH_SIZE = 500
+PRED_BATCH_SIZE = 16
 
 st.set_page_config(
     page_title="NCRP Offense Code Classifier", initial_sidebar_state="collapsed"
@@ -79,16 +79,16 @@ if uploaded_file is not None:
             progress_bar.progress(batch_count / n_batches)
         progress_bar.progress(1.0)
 
-        pred_copy_df = df.copy()
-        pred_copy_df["charge_category_pred"] = max_pred_bulk(bulk_preds)
+        df["charge_category_pred"] = max_pred_bulk(bulk_preds)
 
-        # # TODO: Add all scores
+        # TODO: Add all scores
+        # TODO: Add "confidence"
 
         st.write("**Sample Output**")
-        st.dataframe(pred_copy_df.head(100))
+        st.dataframe(df.head(100))
 
         tmp_download_link = download_link(
-            pred_copy_df,
+            df,
             f"{uploaded_file.name}-ncrp-predictions.csv",
             "⬇️ Download as CSV",
         )
