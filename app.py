@@ -1,14 +1,15 @@
 import os
 from functools import partial
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 import pandas as pd
 import streamlit as st
 from more_itertools import ichunked
+from stqdm import stqdm
 
-from model_utils import predict, predict_bulk, max_pred_bulk
 from download import download_link
+from model_utils import max_pred_bulk, predict, predict_bulk
 
 PRED_BATCH_SIZE = 16
 
@@ -67,17 +68,14 @@ if uploaded_file is not None:
         input_texts = (value for _, value in df[selected_column].items())
 
         n_batches = (len(df) // PRED_BATCH_SIZE) + 1
-        st.markdown("*Progress*")
-        progress_bar = st.progress(0)
-        batch_count = 0
-
         bulk_preds = []
-        for batch in ichunked(input_texts, PRED_BATCH_SIZE):
+        for batch in stqdm(
+            ichunked(input_texts, PRED_BATCH_SIZE),
+            total=n_batches,
+            desc="Bulk Predict Progress",
+        ):
             batch_preds = predict_bulk(batch)
             bulk_preds.extend(batch_preds)
-            batch_count += 1
-            progress_bar.progress(batch_count / n_batches)
-        progress_bar.progress(1.0)
 
         df["charge_category_pred"] = max_pred_bulk(bulk_preds)
 
