@@ -1,9 +1,7 @@
-import os
 from functools import partial
 from pathlib import Path
-from typing import List, Dict, Any
 
-import pandas as pd
+from pandas import DataFrame, read_csv, read_excel
 import streamlit as st
 from more_itertools import ichunked
 from stqdm import stqdm
@@ -11,7 +9,7 @@ from stqdm import stqdm
 from onnx_model_utils import predict, predict_bulk, max_pred_bulk
 from download import download_link
 
-PRED_BATCH_SIZE = 16
+PRED_BATCH_SIZE = 8
 
 
 st.set_page_config(
@@ -31,7 +29,7 @@ predictions = predict(input_text)
 
 st.markdown("Predictions")
 labels = ["Charge Category"]
-st.dataframe(pd.DataFrame(predictions[0]))
+st.dataframe(DataFrame(predictions[0]))
 
 st.markdown("---")
 st.markdown("## 📑 Bulk Coder")
@@ -42,13 +40,14 @@ st.warning(
 st.markdown("1️⃣ **Upload File**")
 uploaded_file = st.file_uploader("Bulk Upload", type=["xlsx", "csv"])
 
-file_readers = {"csv": pd.read_csv, "xlsx": partial(pd.read_excel, engine="openpyxl")}
+file_readers = {"csv": read_csv, "xlsx": partial(read_excel, engine="openpyxl")}
 
 if uploaded_file is not None:
     for filetype, reader in file_readers.items():
         if uploaded_file.name.endswith(filetype):
             df = reader(uploaded_file)
-
+            file_name = uploaded_file.name
+    del uploaded_file
     st.write("2️⃣ **Select Column of Offense Descriptions**")
     string_columns = list(df.select_dtypes("object").columns)
     longest_column = max(
@@ -60,17 +59,21 @@ if uploaded_file is not None:
         options=list(string_columns),
         index=string_columns.index(longest_column),
     )
-    df_unique = df.drop_duplicates(subset=[selected_column])
+    original_length = len(df)
+    df_unique = df.drop_duplicates(subset=[selected_column]).copy()
+    del df
     st.markdown(
-        f"Uploaded Data Sample `(Deduplicated. N Rows = {len(df_unique)}, Original N = {len(df)})`"
+        f"Uploaded Data Sample `(Deduplicated. N Rows = {len(df_unique)}, Original N = {original_length})`"
     )
     st.dataframe(df_unique.head(20))
     st.write(f"3️⃣ **Predict Using Column: `{selected_column}`**")
 
+    column = df_unique[selected_column].copy()
+    del df_unique
     if st.button(f"Compute Predictions"):
-        input_texts = (value for _, value in df_unique[selected_column].items())
+        input_texts = (value for _, value in column.items())
 
-        n_batches = (len(df_unique) // PRED_BATCH_SIZE) + 1
+        n_batches = (len(column) // PRED_BATCH_SIZE) + 1
 
         bulk_preds = []
         for batch in stqdm(
@@ -81,17 +84,20 @@ if uploaded_file is not None:
             batch_preds = predict_bulk(batch)
             bulk_preds.extend(batch_preds)
 
-        pred_copy_df = df_unique.copy()
-        pred_copy_df["charge_category_pred"] = max_pred_bulk(bulk_preds)
+        pred_df = column.to_frame()
+        pred_df["charge_category_pred"] = max_pred_bulk(bulk_preds)
+        del column
+        del bulk_preds
 
         # # TODO: Add all scores
 
         st.write("**Sample Output**")
-        st.dataframe(pred_copy_df.head(100))
+        st.dataframe(pred_df.head(100))
 
         tmp_download_link = download_link(
-            pred_copy_df,
-            f"{uploaded_file.name}-ncrp-predictions.csv",
+            pred_df,
+            f"{file_name}-ncrp-predictions.csv",
             "⬇️ Download as CSV",
         )
         st.markdown(tmp_download_link, unsafe_allow_html=True)
+        st.write(locals())

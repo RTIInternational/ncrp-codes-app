@@ -15,7 +15,7 @@ from typing import Any, Dict, List
 import gzip
 import shutil
 
-import numpy as np
+from numpy import ndarray
 import requests
 import streamlit as st
 from onnxruntime import GraphOptimizationLevel, InferenceSession, SessionOptions
@@ -66,7 +66,7 @@ class ONNXCPUClassificationPipeline:
         return predictions
 
     def _format_predictions(
-        self, softmax_array: np.ndarray, labels: List[str]
+        self, softmax_array: ndarray, labels: List[str]
     ) -> List[List[Dict[str, Any]]]:
         """Format predictions from ONNX similar to the
         huggingface transformers classification pipeline
@@ -80,7 +80,7 @@ class ONNXCPUClassificationPipeline:
         """
         predictions = [
             [
-                {"label": labels[column], "score": softmax_array[row][column]}
+                {"label": labels[column], "score": float(softmax_array[row][column])}
                 for column in range(softmax_array.shape[1])
             ]
             for row in range(softmax_array.shape[0])
@@ -159,6 +159,7 @@ def predict_bulk(texts: List[str]) -> List[List[Dict[str, Any]]]:
     """
     cleaned = [cleaner_cache(text) for text in texts]
     preds = pipeline(cleaned)
+    del cleaned
     return preds
 
 
