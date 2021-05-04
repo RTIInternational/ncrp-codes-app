@@ -18,6 +18,9 @@ st.set_page_config(
 
 st.markdown(Path("readme.md").read_text())
 
+with st.beta_expander("See Performance Details"):
+    st.markdown(Path("performance.md").read_text())
+
 st.markdown("---")
 st.markdown("## ✏️ Single Coder Demo")
 input_text = st.text_input(
