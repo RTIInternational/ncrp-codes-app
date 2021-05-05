@@ -6,7 +6,7 @@ import streamlit as st
 from more_itertools import ichunked
 from stqdm import stqdm
 
-from onnx_model_utils import predict, predict_bulk, max_pred_bulk
+from onnx_model_utils import predict, predict_bulk, max_pred_bulk, RELEASE_TAG
 from download import download_link
 
 PRED_BATCH_SIZE = 8
@@ -18,9 +18,9 @@ st.set_page_config(
 
 st.markdown(Path("readme.md").read_text())
 
-with st.beta_expander("See Performance Details"):
-    st.markdown(Path("performance.md").read_text())
-
+with st.beta_expander("View Model Details"):
+    st.markdown(Path("model_details.md").read_text())
+    st.markdown(f"Model Version: `{RELEASE_TAG}`")
 st.markdown("---")
 st.markdown("## ✏️ Single Coder Demo")
 input_text = st.text_input(

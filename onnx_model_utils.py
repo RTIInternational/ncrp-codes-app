@@ -25,7 +25,7 @@ from transformers.file_utils import http_get
 
 from cleaning_utils import cleaner
 
-RELEASE_TAG = "2021.05.04.15"
+RELEASE_TAG = "2021.05.05.14"
 OUTPUT_PATH = Path("onnx/distilroberta-ncrp-classification-quantized.onnx")
 ONNX_RELEASE = (
     "https://github.com/RTIInternational/"

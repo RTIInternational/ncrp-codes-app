@@ -1,12 +1,21 @@
-## Cross-Validation Performance
+## Model Details
 
-### Overall Metrics
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4739146.svg)](https://doi.org/10.5281/zenodo.4739146)
+
+The model is available on the [huggingface model hub](https://huggingface.co/rti-international/distilroberta-ncrp-classification) for use with the `transformers` library. 
+
+It is also available as a [GitHub repository](https://github.com/RTIInternational/distilroberta-ncrp-classification). The repository contains the model converted to the ONNX format on the [releases page](https://github.com/RTIInternational/distilroberta-ncrp-classification/releases). This application uses the quantized ONNX version of the model to make inferences.
+
+### Cross-Validation Performance
+
+#### Overall Metrics
 
 | Metric   | Value |
 | -------- | ----- |
 | Accuracy | 0.932 |
 | MCC      | 0.93  |
 
+-
 
 | Category  | precision | recall | f1-score |
 | --------- | --------- | ------ | -------- |
@@ -14,7 +23,7 @@
 
 *Note*: These are the average of the values *per fold*, so *macro avg* is the average of the macro average of all categories per fold.
 
-### Per-Category Metrics
+#### Per-Category Metrics
 
 | Category                                               | precision | recall | f1-score | support |
 | ------------------------------------------------------ | --------- | ------ | -------- | ------- |
