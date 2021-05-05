@@ -17,9 +17,9 @@ It is also available as a [GitHub repository](https://github.com/RTIInternationa
 | Accuracy | 0.932 |
 | MCC      | 0.93  |
 
--
+ 
 
-| Category  | precision | recall | f1-score |
+| Metric    | precision | recall | f1-score |
 | --------- | --------- | ------ | -------- |
 | macro avg | 0.81      | 0.785  | 0.793    |
 
