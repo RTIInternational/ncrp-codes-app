@@ -2,6 +2,8 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4739146.svg)](https://doi.org/10.5281/zenodo.4739146)
 
+Please use the above DOI if you wish to cite this model.
+
 The model is available on the [huggingface model hub](https://huggingface.co/rti-international/distilroberta-ncrp-classification) for use with the `transformers` library. 
 
 It is also available as a [GitHub repository](https://github.com/RTIInternational/distilroberta-ncrp-classification). The repository contains the model converted to the ONNX format on the [releases page](https://github.com/RTIInternational/distilroberta-ncrp-classification/releases). This application uses the quantized ONNX version of the model to make inferences.

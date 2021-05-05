@@ -21,7 +21,7 @@ st.markdown(Path("readme.md").read_text())
 with st.beta_expander("View Model Details"):
     st.markdown(Path("model_details.md").read_text())
     st.markdown(f"Model Version: `{RELEASE_TAG}`")
-st.markdown("---")
+
 st.markdown("## ✏️ Single Coder Demo")
 input_text = st.text_input(
     "Input Offense",
