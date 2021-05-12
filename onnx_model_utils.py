@@ -184,7 +184,7 @@ def _max_pred(prediction_scores: List[Dict[str, Any]]) -> Dict[str, Any]:
     return max(prediction_scores, key=lambda d: d["score"])
 
 
-def max_pred_bulk(preds: List[List[Dict[str, Any]]]) -> List[str]:
+def max_pred_bulk(preds: List[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
     """Generates a "column" of label predictions by finding the max
     prediction score per element
 
@@ -192,6 +192,6 @@ def max_pred_bulk(preds: List[List[Dict[str, Any]]]) -> List[str]:
         preds (List[List[Dict[str, Any]]]): A list of predictions
 
     Returns:
-        List[str]: A list of labels with the max predicted score
+        List[Dict[str, Any]: A list of  'label' and 'score' dict with the highest score value
     """
-    return [_max_pred(pred)["label"] for pred in preds]
+    return [_max_pred(pred) for pred in preds]

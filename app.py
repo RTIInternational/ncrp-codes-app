@@ -32,13 +32,20 @@ predictions = predict(input_text)
 
 st.markdown("Predictions")
 labels = ["Charge Category"]
-st.dataframe(DataFrame(predictions[0]))
+st.dataframe(
+    DataFrame(predictions[0])
+    .assign(
+        confidence=lambda d: d["score"].apply(lambda d: round(d * 100, 0)).astype(int)
+    )
+    .drop("score", axis="columns")
+)
 
 st.markdown("---")
 st.markdown("## 📑 Bulk Coder")
 st.warning(
     "⚠️ *Note:* Your input data will be deduplicated"
     " on the selected column to reduce computation requirements."
+    " You will need to re-join the results on your offense text column."
 )
 st.markdown("1️⃣ **Upload File**")
 uploaded_file = st.file_uploader("Bulk Upload", type=["xlsx", "csv"])
@@ -88,9 +95,14 @@ if uploaded_file is not None:
             bulk_preds.extend(batch_preds)
 
         pred_df = column.to_frame()
-        pred_df["charge_category_pred"] = max_pred_bulk(bulk_preds)
+        max_preds = max_pred_bulk(bulk_preds)
+        pred_df["charge_category_pred"] = [p["label"] for p in max_preds]
+        pred_df["charge_category_pred_confidence"] = [
+            int(round(p["score"] * 100, 0)) for p in max_preds
+        ]
         del column
         del bulk_preds
+        del max_preds
 
         # # TODO: Add all scores
 
