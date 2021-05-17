@@ -25,14 +25,14 @@ from transformers.file_utils import http_get
 
 from cleaning_utils import cleaner
 
-RELEASE_TAG = "2021.05.05.14"
-OUTPUT_PATH = Path("onnx/distilroberta-ncrp-classification-quantized.onnx")
+RELEASE_TAG = "2021.05.17.14"
+OUTPUT_PATH = Path("onnx/rota-quantized.onnx")
 ONNX_RELEASE = (
     "https://github.com/RTIInternational/"
-    "distilroberta-ncrp-classification/"
+    "rota/"
     "releases/download/"
     f"{RELEASE_TAG}/"
-    "distilroberta-ncrp-classification-quantized.onnx.gz"
+    "rota-quantized.onnx.gz"
 )
 
 
@@ -124,9 +124,7 @@ def download_model():
 def load_model():
     if not OUTPUT_PATH.exists():
         download_model()
-    tokenizer = AutoTokenizer.from_pretrained(
-        "rti-international/distilroberta-ncrp-classification"
-    )
+    tokenizer = AutoTokenizer.from_pretrained("rti-international/rota")
     pipeline = ONNXCPUClassificationPipeline(tokenizer, str(OUTPUT_PATH))
     return pipeline
 

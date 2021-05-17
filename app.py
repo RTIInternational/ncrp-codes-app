@@ -12,9 +12,7 @@ from download import download_link
 PRED_BATCH_SIZE = 8
 
 
-st.set_page_config(
-    page_title="NCRP Offense Code Classifier", initial_sidebar_state="collapsed"
-)
+st.set_page_config(page_title="ROTA", initial_sidebar_state="collapsed")
 
 st.markdown(Path("readme.md").read_text())
 
